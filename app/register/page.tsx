@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { MessageSquare, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
+import { authService } from "@/lib/auth"
+import { useRouter } from "next/navigation"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -21,16 +23,37 @@ export default function RegisterPage() {
     acceptTerms: false,
   })
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError("")
 
-    // Simulate registration process
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    // Validar que las contraseñas coincidan
+    if (formData.password !== formData.confirmPassword) {
+      setError("Las contraseñas no coinciden")
+      setIsLoading(false)
+      return
+    }
 
-    // Redirect to dashboard (in a real app, handle registration here)
-    window.location.href = "/dashboard"
+    // Validar longitud de contraseña
+    if (formData.password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres")
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      await authService.signUp(formData.email, formData.password, formData.name)
+      router.push("/dashboard")
+    } catch (error: any) {
+      console.error("Error de registro:", error)
+      setError(error.message || "Error al crear la cuenta. Intenta de nuevo.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -49,6 +72,11 @@ export default function RegisterPage() {
           <CardDescription>Regístrate gratis y crea tu primer agente IA en minutos</CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre Completo</Label>
@@ -59,6 +87,7 @@ export default function RegisterPage() {
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -70,6 +99,7 @@ export default function RegisterPage() {
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -82,6 +112,7 @@ export default function RegisterPage() {
                   value={formData.password}
                   onChange={(e) => handleInputChange("password", e.target.value)}
                   required
+                  disabled={isLoading}
                 />
                 <Button
                   type="button"
@@ -89,6 +120,7 @@ export default function RegisterPage() {
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
@@ -103,6 +135,7 @@ export default function RegisterPage() {
                 value={formData.confirmPassword}
                 onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="flex items-center space-x-2">
@@ -110,6 +143,7 @@ export default function RegisterPage() {
                 id="terms"
                 checked={formData.acceptTerms}
                 onCheckedChange={(checked) => handleInputChange("acceptTerms", checked as boolean)}
+                disabled={isLoading}
               />
               <Label htmlFor="terms" className="text-sm">
                 Acepto los{" "}

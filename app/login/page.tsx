@@ -9,22 +9,31 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { MessageSquare, Eye, EyeOff } from "lucide-react"
 import Link from "next/link"
+import { authService } from "@/lib/auth"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
+    setError("")
 
-    // Simulate login process
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Redirect to dashboard (in a real app, handle authentication here)
-    window.location.href = "/dashboard"
+    try {
+      await authService.signIn(email, password)
+      router.push("/dashboard")
+    } catch (error: any) {
+      console.error("Error de login:", error)
+      setError(error.message || "Error al iniciar sesión. Verifica tus credenciales.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -39,6 +48,11 @@ export default function LoginPage() {
           <CardDescription>Accede a tu cuenta para gestionar tus agentes IA</CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Correo Electrónico</Label>
@@ -49,6 +63,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
             <div className="space-y-2">
@@ -61,6 +76,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  disabled={isLoading}
                 />
                 <Button
                   type="button"
@@ -68,6 +84,7 @@ export default function LoginPage() {
                   size="sm"
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>

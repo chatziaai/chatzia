@@ -9,9 +9,10 @@ import { MessageSquare, Plus, Settings, BarChart3, Bot, Bell, Search, Calendar, 
 import Link from "next/link"
 import { authService } from "@/lib/auth"
 import { agentsService } from "@/lib/agents"
+import { AuthGuard } from "@/components/auth-guard"
 import type { User } from "@/lib/supabase"
 
-export default function DashboardPage() {
+function DashboardContent() {
   const [activeTab, setActiveTab] = useState("overview")
   const [user, setUser] = useState<User | null>(null)
   const [stats, setStats] = useState({
@@ -30,7 +31,7 @@ export default function DashboardPage() {
     try {
       const currentUser = await authService.getCurrentUser()
       if (!currentUser) {
-        window.location.href = "/"
+        window.location.href = "/login"
         return
       }
 
@@ -313,5 +314,13 @@ export default function DashboardPage() {
         </main>
       </div>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <AuthGuard>
+      <DashboardContent />
+    </AuthGuard>
   )
 }
